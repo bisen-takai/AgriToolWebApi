@@ -1,0 +1,17 @@
+# APIテスト用サンプルファイル
+# 必要に応じて編集してください。
+
+#変数定義例
+@AgriToolWebApi.API_HostAddress = http://localhost:5266
+
+#GETリクエスト例
+GET {{AgriToolWebApi.API_HostAddress}}/user/
+Accept: application/json
+
+#POSTリクエストの例
+POST {{AgriToolWebApi.API_HostAddress}}/user/
+Content-Type: application/json
+
+{
+  "key": "value"
+}
