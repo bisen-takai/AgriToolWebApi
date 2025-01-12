@@ -12,11 +12,14 @@ namespace AgriToolWebApi.Infrastructure.Persistence.Contexts
         {
         }
 
-        public DbSet<UserEntity> Users { get; set; }
+        public DbSet<UserPersistenceEntity> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // AppDbContext が属するアセンブリを指定
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
     }
 }

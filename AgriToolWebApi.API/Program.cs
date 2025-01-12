@@ -1,17 +1,41 @@
-using AgriToolWebApi.Application.Interfaces;
-using AgriToolWebApi.Application.Services;
-using AgriToolWebApi.Common.Interfaces.Security;
-using AgriToolWebApi.Common.Interfaces.Uuid;
-using AgriToolWebApi.Common.Utilities.Security;
-using AgriToolWebApi.Common.Utilities.Uuid;
+using AgriToolWebApi.Application.Exceptions;
+using AgriToolWebApi.Common.Extensions;
+using AgriToolWebApi.Common.Settings;
 using AgriToolWebApi.Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ロギングの設定をクリアしてコンソールロギングを追加
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
+// LoggerFactory を一時的に作成
+using var loggerFactory = LoggerFactory.Create(loggingBuilder =>
+{
+    loggingBuilder.AddConsole();
+});
+
+// ロガーを取得
+var logger = loggerFactory.CreateLogger<Program>();
+
 // appsettings.jsonからデフォルトのDB接続文字列を取得
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var mySqlVersion = builder.Configuration.GetSection("DatabaseOptions:MySqlVersion").Value;
+var mySqlVersionString = builder.Configuration.GetValue<string>("DatabaseOptions:MySqlVersion");
+
+Version mySqlVersion;
+
+try
+{
+    mySqlVersion = Version.Parse(mySqlVersionString);
+}
+catch (FormatException ex)
+{
+    logger.LogError(ex, "MySQLバージョンのフォーマットが正しくありません");
+    throw;
+}
+
+var serverVersion = new MySqlServerVersion(mySqlVersion);
 
 // Add services to the container.
 
@@ -19,17 +43,14 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<AppDbContext>(options => options.UseMySql(connectionString, new MySqlServerVersion(new Version(mySqlVersion))));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseMySql(connectionString, serverVersion));
 
-#region サービス層の登録
-builder.Services.AddScoped<IUserService, UserService>();
-#endregion
+// Application層のサービスの登録
+builder.Services.AddApplicationServices();
+// Common層のサービスの登録
+builder.Services.AddCommonUtilities();
 
-#region ユーティリティの登録
-builder.Services.AddScoped<IUuidGenerator, UuidGenerator>();
-builder.Services.AddScoped<ISaltGenerator, SaltGenerator>();
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-#endregion
+builder.Services.Configure<SecuritySettings>(builder.Configuration.GetSection("SecuritySettings"));
 
 var app = builder.Build();
 
