@@ -13,14 +13,7 @@ namespace AgriToolWebApi.Common.Utilities.Uuid
         /// <returns>UUID</returns>
         public Guid GenerateUuid()
         {
-            try
-            {
-                return Guid.NewGuid();
-            }
-            catch (Exception ex)
-            {
-                throw new ApplicationException("UUIDの生成に失敗しました。");
-            }
+            return Guid.NewGuid();
         }
     }
 }
